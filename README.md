@@ -1,5 +1,3 @@
-# AgentPowers Plugin For Codex
-
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./assets/logo-agentpowers-darkmode.svg">
@@ -7,6 +5,8 @@
     <img alt="AgentPowers" src="./assets/logo-agentpowers-lightmode.svg" width="420">
   </picture>
 </p>
+
+# AgentPowers Plugin For Codex
 
 Install, buy, and manage AI skills from [AgentPowers](https://agentpowers.ai) directly inside Codex.
 
