@@ -1,5 +1,13 @@
 # AgentPowers Plugin For Codex
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo-agentpowers-darkmode.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/logo-agentpowers-lightmode.svg">
+    <img alt="AgentPowers" src="./assets/logo-agentpowers-lightmode.svg" width="420">
+  </picture>
+</p>
+
 Codex plugin for the AgentPowers marketplace with full account, checkout, purchase, and install automation.
 
 ## Highlights
