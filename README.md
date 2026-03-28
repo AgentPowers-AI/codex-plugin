@@ -8,27 +8,62 @@
   </picture>
 </p>
 
-Codex plugin for the AgentPowers marketplace with full account, checkout, purchase, and install automation.
+Install, buy, and manage AI skills from [AgentPowers](https://agentpowers.ai) directly inside Codex.
 
-## Highlights
+AgentPowers is a marketplace for production-ready AI skills and agents. This plugin connects Codex to your AgentPowers account so you can search the marketplace, complete checkout, access purchased skills, and install them in a few prompts.
 
-- Live marketplace search and detail pulls from AgentPowers API.
-- Account-aware flows (`login`, `whoami`, profile, purchases).
-- Checkout orchestration (`start_checkout`, status polling, session confirmation).
-- Purchase install automation (`install_skill`, `install_purchased_skill`).
-- Cross-tool install targeting with alias support.
-- Compatibility fallback when local `ap` CLI does not yet support a target directly.
+## Why Use This Plugin?
 
-## How It Works
+- Find high-quality AI skills faster.
+- Log in to AgentPowers without leaving your workflow.
+- Run checkout and purchase confirmation from Codex.
+- Install purchased skills for Codex and other supported tools.
+- Keep everything in one place instead of juggling browser tabs and manual installs.
 
-1. Codex calls the local MCP bridge in `scripts/agentpowers-mcp-server.mjs`.
-2. The bridge calls AgentPowers API endpoints and `ap` CLI commands.
-3. For unsupported `ap --for <tool>` targets, the bridge installs via `codex` and mirrors files to the requested tool root.
-4. The plugin returns install path + command output to the user.
+## What You Can Do In Plain English
+
+- "Find the best AgentPowers skill for my project."
+- "Log me in and show my purchased skills."
+- "Start checkout for this skill and install it after payment."
+- "Install my purchased skill for Cursor, Windsurf, or Gemini CLI."
+
+## Non-Technical Setup (Codex App)
+
+If you prefer clicking through the UI:
+
+1. Open Codex App.
+2. Go to **Plugins**.
+3. Click **+** and add this plugin repository as a local plugin.
+4. Click **Add to Codex** on AgentPowers.
+5. Start a new chat and type: `Log me into AgentPowers and find the best skill for my current project.`
+
+That is enough to get started.
+
+## Technical Setup (Codex CLI)
+
+If you use terminal-first workflows, connect the MCP server directly:
+
+```bash
+git clone https://github.com/AgentPowers-AI/codex-plugin.git
+cd codex-plugin
+
+codex mcp add agentpowers-marketplace -- bash -lc 'ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd); node "$ROOT/scripts/agentpowers-mcp-server.mjs"'
+codex mcp list
+```
+
+Then start Codex and use it normally:
+
+```bash
+codex
+```
+
+Example first prompt:
+
+```text
+Log me into AgentPowers, list my purchases, and install the best match for my project.
+```
 
 ## Supported Install Targets
-
-Canonical targets:
 
 - `codex`
 - `claude-code`
@@ -43,7 +78,7 @@ Canonical targets:
 - `openclaw`
 - `kiro`
 
-Friendly aliases:
+Friendly aliases also work:
 
 - `gemini` -> `gemini-cli`
 - `open code` -> `opencode`
@@ -51,94 +86,38 @@ Friendly aliases:
 - `claude.ai` -> `claude-ai`
 - `copilot` -> `github-copilot`
 
-## Core MCP Tools
+## Checkout + Purchase Flow
 
-Account:
+For paid skills, the plugin handles:
 
-- `login_account`
-- `whoami_account`
-- `logout_account`
-- `get_account_profile`
+1. Login check.
+2. Checkout creation.
+3. Payment status confirmation.
+4. Purchase access validation.
+5. Install automation.
 
-Discovery:
+So users can complete the full flow with natural-language prompts.
 
-- `search_marketplace`
-- `get_skill_details`
-- `get_categories`
-- `get_seller_profile`
-- `get_skill_reviews`
-- `get_security_results`
-- `get_marketplace_snapshot`
+## Security And Trust
 
-Commerce and install:
-
-- `start_checkout`
-- `check_purchase_status`
-- `confirm_purchase_session`
-- `download_purchased_skill`
-- `list_purchases`
-- `install_skill`
-- `install_purchased_skill`
-- `check_installed`
-- `check_for_updates`
-- `uninstall_skill`
-
-## Non-Technical Setup
-
-If you just want this working without any coding:
-
-1. Open Codex, then open the Plugins tab.
-2. Add/install the AgentPowers plugin from this repository.
-3. Start a chat and say: "Log me into AgentPowers."
-4. After login, say: "Find and install the best AgentPowers skill for me."
-
-That’s it. The plugin handles login, checkout flow, purchase confirmation, and install automation for you.
-
-## Quick Start
-
-```bash
-# Validate plugin structure + API + MCP bridge
-bash scripts/plugin-doctor.sh
-
-# Live API snapshot
-bash scripts/agentpowers-marketplace-context.sh
-
-# Direct API request helper
-bash scripts/agentpowers-api-request.sh '/skills?limit=5'
-```
-
-## Example Workflows
-
-Install by marketplace search:
-
-```text
-search_marketplace(query="code review", limit=5)
-get_skill_details(slug="hello-world", source="clawhub")
-install_skill(slug="hello-world", source="clawhub", target_tool="cursor", global=true)
-```
-
-Checkout + purchase confirmation:
-
-```text
-start_checkout(slug="stripe-test-skill")
-confirm_purchase_session(session_id="cs_test_...", wait_for_completion=true, include_download_url=true)
-install_purchased_skill(session_id="cs_test_...", target_tool="codex")
-```
-
-## Repository Layout
-
-- `.codex-plugin/plugin.json`: plugin metadata, marketplace card config, prompts, icon/logo.
-- `.mcp.json`: MCP server registration.
-- `.app.json`: app connector metadata.
-- `hooks.json`: plugin lifecycle hooks.
-- `skills/agentpowers-marketplace/SKILL.md`: bundled skill instructions.
-- `scripts/agentpowers-mcp-server.mjs`: MCP bridge implementation.
-- `scripts/plugin-doctor.sh`: verification script.
-- `assets/`: screenshots and branding assets.
+- Uses official AgentPowers API endpoints.
+- Reuses your authenticated AgentPowers session/token.
+- Includes guardrails for risky shell command patterns.
+- Works with AgentPowers security checks for external-source installs.
 
 ## Troubleshooting
 
+- `Not authenticated`: run `login_account` (or `ap login`).
 - `AgentPowers CLI not available`: install or repair `ap` CLI.
-- `Not authenticated`: run `login_account` or `ap login`.
-- `Security scan failed: timeout`: retry install (external source scan service can intermittently time out).
-- Unknown `target_tool`: use one of the canonical targets listed above or a supported alias.
+- `Security scan failed: timeout`: retry install (intermittent upstream scan timeout).
+- MCP server not visible in CLI: run `codex mcp list` and re-add the server.
+
+## Repo Structure
+
+- `.codex-plugin/plugin.json`: plugin metadata and storefront information.
+- `.mcp.json`: MCP server registration settings.
+- `hooks.json`: plugin lifecycle hooks.
+- `scripts/agentpowers-mcp-server.mjs`: main AgentPowers MCP bridge.
+- `scripts/plugin-doctor.sh`: one-command health check.
+- `skills/agentpowers-marketplace/SKILL.md`: bundled operating guide.
+- `assets/`: icons, logos, screenshots.
