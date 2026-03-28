@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "agentpowers-marketplace": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd); node \"$ROOT/scripts/agentpowers-mcp-server.mjs\""
+      ]
+    }
+  }
+}

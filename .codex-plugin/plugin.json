@@ -1,0 +1,51 @@
+{
+  "name": "agentpowers",
+  "version": "0.3.7",
+  "description": "AgentPowers marketplace plugin for login, checkout, purchases, and cross-tool skill install operations.",
+  "author": {
+    "name": "AgentPowers",
+    "email": "hello@agentpowers.ai",
+    "url": "https://agentpowers.ai"
+  },
+  "homepage": "https://agentpowers.ai",
+  "repository": "https://github.com/AgentPowers-AI/codex-plugin",
+  "license": "UNLICENSED",
+  "keywords": [
+    "agentpowers",
+    "marketplace",
+    "api",
+    "mcp",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks.json",
+  "mcpServers": "./.mcp.json",
+  "apps": "./.app.json",
+  "interface": {
+    "displayName": "AgentPowers",
+    "shortDescription": "AgentPowers marketplace login, checkout, purchases, and cross-tool installs.",
+    "longDescription": "Codex plugin that connects to AgentPowers API and CLI for marketplace search, account access, checkout, purchased file access, and multi-tool skill installation via MCP.",
+    "developerName": "AgentPowers",
+    "category": "Productivity",
+    "capabilities": [
+      "Marketplace",
+      "Auth",
+      "Commerce",
+      "MCP"
+    ],
+    "websiteURL": "https://agentpowers.ai",
+    "privacyPolicyURL": "https://agentpowers.ai/privacy",
+    "termsOfServiceURL": "https://agentpowers.ai/terms",
+    "defaultPrompt": [
+      "Log me into AgentPowers, find the best marketplace skill for this project, and install it for Cursor.",
+      "Check my AgentPowers purchases and install one to Claude Desktop.",
+      "Search AgentPowers, compare top options for Gemini CLI, and install the best fit."
+    ],
+    "brandColor": "#38BDB8",
+    "composerIcon": "./assets/icon-agentpowers.png",
+    "logo": "./assets/icon-agentpowers.png",
+    "screenshots": [
+      "./assets/screenshot-home.png"
+    ]
+  }
+}

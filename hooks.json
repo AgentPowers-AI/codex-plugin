@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd); bash \"$ROOT/scripts/session-start-context.sh\"",
+            "timeoutSec": 20,
+            "statusMessage": "Loading AgentPowers API and MCP context"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd); bash \"$ROOT/scripts/pre-tool-guard.sh\"",
+            "timeoutSec": 20,
+            "statusMessage": "Applying AgentPowers command guardrails"
+          }
+        ]
+      }
+    ]
+  }
+}
