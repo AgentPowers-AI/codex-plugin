@@ -75,6 +75,17 @@ Commerce and install:
 - `check_for_updates`
 - `uninstall_skill`
 
+## Non-Technical Setup
+
+If you just want this working without any coding:
+
+1. Open Codex, then open the Plugins tab.
+2. Add/install the AgentPowers plugin from this repository.
+3. Start a chat and say: "Log me into AgentPowers."
+4. After login, say: "Find and install the best AgentPowers skill for me."
+
+That’s it. The plugin handles login, checkout flow, purchase confirmation, and install automation for you.
+
 ## Quick Start
 
 ```bash
@@ -105,31 +116,6 @@ start_checkout(slug="stripe-test-skill")
 confirm_purchase_session(session_id="cs_test_...", wait_for_completion=true, include_download_url=true)
 install_purchased_skill(session_id="cs_test_...", target_tool="codex")
 ```
-
-## Live Smoke Matrix (2026-03-28)
-
-Test command pattern used for each target:
-
-```text
-install_skill(slug="hello-world", source="clawhub", target_tool="<target>", global=true)
-```
-
-Results (same skill per target, live MCP `install_skill` calls):
-
-| Requested target | Canonical target | Final status | Install path |
-| --- | --- | --- | --- |
-| `gemini` | `gemini-cli` | PASS | `~/.gemini-cli/skills/hello-world` |
-| `open code` | `opencode` | PASS | `~/.opencode/skills/hello-world` |
-| `claude.ai` | `claude-ai` | PASS | `~/.claude-ai/skills/hello-world` |
-| `claude desktop` | `claude-cowork` | PASS | `~/.claude-cowork/skills/hello-world` |
-| `cursor` | `cursor` | PASS | `~/.cursor/skills/hello-world` |
-| `windsurf` | `windsurf` | PASS | `~/.windsurf/skills/hello-world` |
-| `antigravity` | `antigravity` | PASS | `~/.antigravity/skills/hello-world` |
-| `copilot` | `github-copilot` | PASS | `~/.github-copilot/skills/hello-world` |
-| `openclaw` | `openclaw` | PASS | `~/.openclaw/skills/hello-world` |
-| `kiro` | `kiro` | PASS | `~/.kiro/skills/hello-world` |
-
-Note: `open code`, `cursor`, and `copilot` needed one retry because of intermittent upstream security-scan timeouts. Retry logic is now built in (`fallback_retry_attempts`, default `2`).
 
 ## Repository Layout
 
