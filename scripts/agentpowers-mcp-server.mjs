@@ -2232,11 +2232,32 @@ function findHeaderTerminator(buffer) {
 
 let inputBuffer = Buffer.alloc(0);
 
-function looksLikeLspFraming(buffer) {
-  // LSP framing begins with `Content-Length:`. We only need the first few bytes
-  // to decide. NDJSON messages start with `{` (JSON object) or `[` (batch).
-  const head = buffer.slice(0, 16).toString("utf8");
-  return /^content-length:/i.test(head);
+function detectFraming(buffer) {
+  // Returns "ndjson", "lsp", or null (need more bytes).
+  // NDJSON messages start with `{` or `[` (whitespace allowed).
+  // LSP framing starts with `Content-Length:`.
+  // Skip leading whitespace; the JSON-RPC body never starts with anything else.
+  let i = 0;
+  while (i < buffer.length) {
+    const b = buffer[i];
+    if (b !== 0x20 && b !== 0x09 && b !== 0x0a && b !== 0x0d) break;
+    i++;
+  }
+  if (i >= buffer.length) return null;
+  const first = buffer[i];
+  if (first === 0x7b || first === 0x5b) return "ndjson"; // '{' or '['
+  // Need enough bytes to disambiguate "Content-Length:" (15 chars).
+  if (buffer.length - i < 15) {
+    // Could still be a prefix of "Content-Length:" — keep waiting.
+    const head = buffer.slice(i).toString("utf8").toLowerCase();
+    if ("content-length:".startsWith(head)) return null;
+    // Anything else with no '{' or '[' is malformed; treat as NDJSON so the
+    // line parser surfaces a JSON error.
+    return "ndjson";
+  }
+  const head = buffer.slice(i, i + 15).toString("utf8");
+  if (/^content-length:/i.test(head)) return "lsp";
+  return "ndjson";
 }
 
 function dispatch(message) {
@@ -2306,15 +2327,19 @@ function parseNdjsonMessages() {
   }
 }
 
+let framingDecided = false;
+
 function parseMessages() {
-  // Auto-detect framing on first non-empty input. NDJSON is the MCP spec
-  // default; LSP framing is accepted for back-compat with older clients.
   if (inputBuffer.length === 0) return;
-  if (looksLikeLspFraming(inputBuffer)) {
-    useLspFraming = true;
+  if (!framingDecided) {
+    const detected = detectFraming(inputBuffer);
+    if (detected === null) return; // wait for more bytes
+    useLspFraming = detected === "lsp";
+    framingDecided = true;
+  }
+  if (useLspFraming) {
     parseLspMessages();
   } else {
-    useLspFraming = false;
     parseNdjsonMessages();
   }
 }

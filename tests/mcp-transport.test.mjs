@@ -139,6 +139,49 @@ test("server still accepts LSP Content-Length framing (backwards compat)", async
   assert.ok(response.result, "LSP-framed init should still produce a result");
 });
 
+test("framing detection waits for enough bytes (LSP-prefix chunk)", async () => {
+  // If the first stdin chunk is just "Content-L", the server must NOT pick
+  // NDJSON yet — it has to keep waiting and only commit once it can prove
+  // which framing the peer is using.
+  const child = spawnServer();
+  const body = JSON.stringify(INIT);
+  const fullFrame = `Content-Length: ${Buffer.byteLength(body, "utf8")}\r\n\r\n${body}`;
+  const splitAt = "Content-L".length;
+  const part1 = fullFrame.slice(0, splitAt);
+  const part2 = fullFrame.slice(splitAt);
+  const response = await new Promise((resolve, reject) => {
+    let stdout = "";
+    const t = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new Error(`timeout. stdout=<<<${stdout}>>>`));
+    }, 4000);
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString("utf8");
+      const headerEnd = stdout.indexOf("\r\n\r\n");
+      if (headerEnd !== -1) {
+        const m = /content-length:\s*(\d+)/i.exec(stdout.slice(0, headerEnd));
+        if (m) {
+          const need = headerEnd + 4 + Number(m[1]);
+          if (stdout.length >= need) {
+            clearTimeout(t);
+            child.kill("SIGTERM");
+            try {
+              resolve(JSON.parse(stdout.slice(headerEnd + 4, need)));
+            } catch (err) {
+              reject(err);
+            }
+          }
+        }
+      }
+    });
+    child.on("error", reject);
+    child.stdin.write(part1);
+    setTimeout(() => child.stdin.write(part2), 30);
+  });
+  assert.equal(response.id, 1, "split LSP frame should still be initialized correctly");
+  assert.ok(response.result);
+});
+
 test("server lists tools via NDJSON", async () => {
   const child = spawnServer();
   const result = await new Promise((resolve, reject) => {
