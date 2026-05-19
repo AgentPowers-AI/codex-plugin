@@ -27,13 +27,19 @@ AgentPowers is a marketplace for production-ready AI skills and agents. This plu
 - "Start checkout for this skill and install it after payment."
 - "Install my purchased skill for Cursor, Windsurf, or Gemini CLI."
 
-## Non-Technical Setup (Codex App)
+## Non-Technical Setup (Codex App / Codex CLI marketplace)
 
-If you prefer clicking through the UI:
+If you prefer the marketplace install:
+
+```bash
+codex plugin marketplace add AgentPowers-AI/codex-plugin
+```
+
+Or in the Codex App:
 
 1. Open Codex App.
 2. Go to **Plugins**.
-3. Click **+** and add this plugin repository as a local plugin.
+3. Click **+** and add `AgentPowers-AI/codex-plugin` as a marketplace.
 4. Click **Add to Codex** on AgentPowers.
 5. Start a new chat and type: `Log me into AgentPowers and find the best skill for my current project.`
 
@@ -47,9 +53,12 @@ If you use terminal-first workflows, connect the MCP server directly:
 git clone https://github.com/AgentPowers-AI/codex-plugin.git
 cd codex-plugin
 
-codex mcp add agentpowers-marketplace -- bash -lc 'ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd); node "$ROOT/scripts/agentpowers-mcp-server.mjs"'
+codex mcp add agentpowers-marketplace -- "$(pwd)/scripts/agentpowers-mcp-launch.sh"
 codex mcp list
 ```
+
+The `agentpowers-mcp-launch.sh` wrapper resolves the MCP server relative to
+its own location, so you can launch `codex` from any directory afterwards.
 
 Then start Codex and use it normally:
 

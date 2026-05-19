@@ -2082,10 +2082,20 @@ function makePromptMessages(name, args = {}) {
   ];
 }
 
+// MCP stdio spec (modelcontextprotocol.io/specification/2025-06-18/basic/transports)
+// requires newline-delimited JSON. Default to NDJSON; switch to LSP-style
+// Content-Length framing only if the peer sends framed input first (back-compat).
+let useLspFraming = false;
+
 function sendMessage(message) {
-  const payload = Buffer.from(JSON.stringify(message), "utf8");
-  process.stdout.write(`Content-Length: ${payload.length}\r\n\r\n`);
-  process.stdout.write(payload);
+  const payload = JSON.stringify(message);
+  if (useLspFraming) {
+    const bytes = Buffer.byteLength(payload, "utf8");
+    process.stdout.write(`Content-Length: ${bytes}\r\n\r\n`);
+    process.stdout.write(payload);
+  } else {
+    process.stdout.write(payload + "\n");
+  }
 }
 
 function sendResponse(id, result) {
@@ -2222,7 +2232,26 @@ function findHeaderTerminator(buffer) {
 
 let inputBuffer = Buffer.alloc(0);
 
-function parseMessages() {
+function looksLikeLspFraming(buffer) {
+  // LSP framing begins with `Content-Length:`. We only need the first few bytes
+  // to decide. NDJSON messages start with `{` (JSON object) or `[` (batch).
+  const head = buffer.slice(0, 16).toString("utf8");
+  return /^content-length:/i.test(head);
+}
+
+function dispatch(message) {
+  const hasId = Object.prototype.hasOwnProperty.call(message, "id");
+  if (!hasId && message.method === "notifications/initialized") {
+    return;
+  }
+  handleRequest(message).catch((error) => {
+    if (hasId) {
+      sendError(message.id, -32000, error instanceof Error ? error.message : String(error));
+    }
+  });
+}
+
+function parseLspMessages() {
   while (true) {
     const headerPos = findHeaderTerminator(inputBuffer);
     if (!headerPos) return;
@@ -2252,16 +2281,41 @@ function parseMessages() {
       continue;
     }
 
-    const hasId = Object.prototype.hasOwnProperty.call(message, "id");
-    if (!hasId && message.method === "notifications/initialized") {
+    dispatch(message);
+  }
+}
+
+function parseNdjsonMessages() {
+  while (true) {
+    const nl = inputBuffer.indexOf(0x0a); // '\n'
+    if (nl === -1) return;
+    const lineBuf = inputBuffer.slice(0, nl);
+    inputBuffer = inputBuffer.slice(nl + 1);
+    const line = lineBuf.toString("utf8").replace(/\r$/, "").trim();
+    if (!line) continue;
+
+    let message;
+    try {
+      message = JSON.parse(line);
+    } catch (error) {
+      process.stderr.write(`Invalid JSON line: ${error instanceof Error ? error.message : String(error)}\n`);
       continue;
     }
 
-    handleRequest(message).catch((error) => {
-      if (hasId) {
-        sendError(message.id, -32000, error instanceof Error ? error.message : String(error));
-      }
-    });
+    dispatch(message);
+  }
+}
+
+function parseMessages() {
+  // Auto-detect framing on first non-empty input. NDJSON is the MCP spec
+  // default; LSP framing is accepted for back-compat with older clients.
+  if (inputBuffer.length === 0) return;
+  if (looksLikeLspFraming(inputBuffer)) {
+    useLspFraming = true;
+    parseLspMessages();
+  } else {
+    useLspFraming = false;
+    parseNdjsonMessages();
   }
 }
 

@@ -1,0 +1,20 @@
+{
+  "name": "agentpowers",
+  "interface": {
+    "displayName": "AgentPowers"
+  },
+  "plugins": [
+    {
+      "name": "agentpowers",
+      "source": {
+        "source": "local",
+        "path": "../.."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
