@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "repo": "codex-plugin",
+  "workflows": {
+    "ci.yml": {
+      "sha256": "b1b6b1ff02f40ef21265be3d7580a9348e1553d200ef93ab0b310a646c1e4515",
+      "mirrored": ["test"]
+    }
+  },
+  "jobs": [
+    {
+      "id": "test",
+      "name": "CI / test (node --test tests/*.test.mjs)",
+      "mirrors": "ci.yml#test",
+      "timeoutMin": 10,
+      "steps": [
+        { "label": "node --test tests/*.test.mjs", "run": "node --version\nnode --test tests/*.test.mjs" }
+      ]
+    }
+  ]
+}
