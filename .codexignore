@@ -1,0 +1,8 @@
+.git/
+.github/
+.local-ci.json
+tests/
+node_modules/
+.env
+.env.*
+*.log

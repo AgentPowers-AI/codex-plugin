@@ -40,9 +40,11 @@ test("marketplace manifest lists the agentpowers plugin", () => {
 test("the marketplace plugin path actually contains a Codex plugin", () => {
   const data = JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
   const ap = data.plugins.find((p) => p.name === "agentpowers");
-  // Source path is relative to the marketplace manifest's directory.
-  const manifestDir = path.dirname(MANIFEST);
-  const pluginDir = path.resolve(manifestDir, ap.source.path);
+  // Codex resolves local source paths against the marketplace root (the repo
+  // root), not the manifest's directory, and requires a `./` prefix. With
+  // `../..`, `codex plugin list` reports "No marketplace plugins found."
+  assert.ok(ap.source.path.startsWith("./"), "source.path must start with './'");
+  const pluginDir = path.resolve(PLUGIN_ROOT, ap.source.path);
   const pluginJson = path.join(pluginDir, ".codex-plugin", "plugin.json");
   assert.ok(
     fs.existsSync(pluginJson),
