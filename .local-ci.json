@@ -3,7 +3,7 @@
   "repo": "codex-plugin",
   "workflows": {
     "ci.yml": {
-      "sha256": "b1b6b1ff02f40ef21265be3d7580a9348e1553d200ef93ab0b310a646c1e4515",
+      "sha256": "f81c50d1c1cbb35d80c472420f87c1e3e45f0594336c29e75352b7db56c48c8f",
       "mirrored": ["test"]
     }
   },
