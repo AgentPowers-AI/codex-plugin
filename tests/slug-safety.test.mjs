@@ -224,3 +224,76 @@ test("install fallback mirrors a valid slug into the target tool and cleans only
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
+
+// The project root (<cwd>/.claude) comes from an untrusted repository. A path
+// text check alone cannot see where an ancestor symlink leads.
+function makeVictim(sandbox) {
+  const victim = path.join(sandbox, "victim");
+  fs.mkdirSync(path.join(victim, "projects"), { recursive: true });
+  fs.writeFileSync(path.join(victim, "projects", "KEEP"), "must survive\n");
+  return victim;
+}
+
+test("uninstall_skill does not follow a project .claude/skills symlink", async () => {
+  const home = makeHome();
+  const sandbox = SANDBOXES.get(home);
+  try {
+    const victim = makeVictim(sandbox);
+    const proj = path.join(sandbox, "proj");
+    fs.mkdirSync(path.join(proj, ".claude"), { recursive: true });
+    fs.symlinkSync(victim, path.join(proj, ".claude", "skills"));
+    await callTool(home, "uninstall_skill", { slug: "projects", target_tool: "claude-code" }, { cwd: proj });
+    assert.ok(fs.existsSync(path.join(victim, "projects", "KEEP")), "followed .claude/skills symlink out of the project");
+    assertHomeIntact(home);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+test("uninstall_skill does not follow a project .claude symlink", async () => {
+  const home = makeHome();
+  const sandbox = SANDBOXES.get(home);
+  try {
+    const victimRoot = path.join(sandbox, "victim-root");
+    fs.mkdirSync(path.join(victimRoot, "skills", "projects"), { recursive: true });
+    fs.writeFileSync(path.join(victimRoot, "skills", "projects", "KEEP"), "must survive\n");
+    const proj = path.join(sandbox, "proj");
+    fs.mkdirSync(proj, { recursive: true });
+    fs.symlinkSync(victimRoot, path.join(proj, ".claude"));
+    await callTool(home, "uninstall_skill", { slug: "projects", target_tool: "claude-code" }, { cwd: proj });
+    assert.ok(fs.existsSync(path.join(victimRoot, "skills", "projects", "KEEP")), "followed .claude symlink out of the project");
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+test("uninstall_skill removes a symlinked skill entry itself, never its target", async () => {
+  const home = makeHome();
+  const sandbox = SANDBOXES.get(home);
+  try {
+    const victim = makeVictim(sandbox);
+    const proj = path.join(sandbox, "proj");
+    fs.mkdirSync(path.join(proj, ".claude", "skills"), { recursive: true });
+    fs.symlinkSync(path.join(victim, "projects"), path.join(proj, ".claude", "skills", "linky"));
+    await callTool(home, "uninstall_skill", { slug: "linky", target_tool: "claude-code" }, { cwd: proj });
+    assert.ok(fs.existsSync(path.join(victim, "projects", "KEEP")), "deleted through a symlinked entry");
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+test("uninstall_skill removes a skill installed only in the project .claude root", async () => {
+  const home = makeHome();
+  const sandbox = SANDBOXES.get(home);
+  try {
+    const proj = path.join(sandbox, "proj");
+    fs.mkdirSync(path.join(proj, ".claude", "skills", "proj-skill"), { recursive: true });
+    fs.writeFileSync(path.join(proj, ".claude", "skills", "proj-skill", "SKILL.md"), "# p\n");
+    const msg = await callTool(home, "uninstall_skill", { slug: "proj-skill", target_tool: "claude-code" }, { cwd: proj });
+    assert.ok(!isRejected(msg), resultText(msg));
+    assert.ok(!fs.existsSync(path.join(proj, ".claude", "skills", "proj-skill")), "project skill should be removed");
+    assertHomeIntact(home);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
