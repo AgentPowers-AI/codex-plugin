@@ -181,3 +181,46 @@ test("install_skill rejects hostile slugs before touching the network or disk", 
     fs.rmSync(SANDBOXES.get(home) || home, { recursive: true, force: true });
   }
 });
+
+// The install mirror fallback (non-CLI target such as cursor) used to rmSync
+// <target>/<kind>/<slug> and the bridge copy with an unvalidated slug. Drive it
+// end to end with a fake `ap` CLI to prove the guarded path still works.
+function makeFakeAp(sandboxRoot) {
+  const bin = path.join(sandboxRoot, "fakebin");
+  fs.mkdirSync(bin, { recursive: true });
+  const script = [
+    "#!/bin/sh",
+    'if [ "$1" = "--help" ]; then exit 0; fi',
+    'if [ "$1" = "install" ]; then',
+    '  slug="$2"; tool=""',
+    '  while [ $# -gt 0 ]; do if [ "$1" = "--for" ]; then tool="$2"; fi; shift; done',
+    '  if [ "$tool" = "codex" ] || { [ ".codex" = ".claude" ] && [ "$tool" = "claude-code" ]; }; then',
+    '    mkdir -p "$HOME/.codex/skills/$slug" && echo "# $slug" > "$HOME/.codex/skills/$slug/SKILL.md"; exit 0',
+    "  fi",
+    '  echo "Unknown tool: $tool"; exit 1',
+    "fi",
+    "exit 1",
+  ].join("\n");
+  fs.writeFileSync(path.join(bin, "ap"), script + "\n");
+  fs.chmodSync(path.join(bin, "ap"), 0o755);
+  return bin;
+}
+
+test("install fallback mirrors a valid slug into the target tool and cleans only the bridge copy", async () => {
+  const home = makeHome();
+  const sandbox = SANDBOXES.get(home);
+  const bin = makeFakeAp(sandbox);
+  const origPath = process.env.PATH;
+  process.env.PATH = `${bin}:${origPath}`;
+  try {
+    const msg = await callTool(home, "install_skill", { slug: "fresh-skill", license_code: "LIC", target_tool: "cursor" });
+    assert.ok(!isRejected(msg), resultText(msg));
+    assert.match(resultText(msg), /fallback/i);
+    assert.ok(fs.existsSync(path.join(home, ".cursor", "skills", "fresh-skill", "SKILL.md")), "mirrored into cursor");
+    assert.ok(!fs.existsSync(path.join(home, ".codex", "skills", "fresh-skill")), "temporary bridge copy removed");
+    assertHomeIntact(home);
+  } finally {
+    process.env.PATH = origPath;
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
