@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd); bash \"$ROOT/scripts/session-start-context.sh\"",
+            "command": "R=\"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}\"; if [ -n \"$R\" ] && [ -f \"$R/scripts/session-start-context.sh\" ]; then exec bash \"$R/scripts/session-start-context.sh\"; fi; exit 0",
             "timeoutSec": 20,
             "statusMessage": "Loading AgentPowers API and MCP context"
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd); bash \"$ROOT/scripts/pre-tool-guard.sh\"",
+            "command": "R=\"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-}}\"; if [ -n \"$R\" ] && [ -f \"$R/scripts/pre-tool-guard.sh\" ]; then exec bash \"$R/scripts/pre-tool-guard.sh\"; fi; exit 0",
             "timeoutSec": 20,
             "statusMessage": "Applying AgentPowers command guardrails"
           }
